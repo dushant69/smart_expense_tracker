@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Analytics</h3>
+        <p class="text-muted mb-0">Your spending trends over time</p>
+    </div>
+    <!-- Time range buttons -->
+    <div class="btn-group" role="group" id="rangeButtons">
+        <button class="btn btn-outline-primary rounded-start-pill" data-range="7">Last 7 days</button>
+        <button class="btn btn-brand" data-range="30">Last 1 month</button>
+        <button class="btn btn-outline-primary rounded-end-pill" data-range="90">Last 3 months</button>
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="card p-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);"><i class="bi bi-currency-rupee"></i></div>
+        <div>
+            <div class="text-muted small">Total spent in <span id="rangeLabel">last 1 month</span></div>
+            <div class="h3 fw-bold mb-0">₹<span id="rangeTotal">0</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">Daily Spending</h6>
+            <div style="position:relative; height:320px;">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card p-4">
+            <h6 class="fw-bold mb-3">By Category</h6>
+            <div style="position:relative; height:320px;">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    let lineChart, barChart;
+    const labelFor = { 7: 'last 7 days', 30: 'last 1 month', 90: 'last 3 months' };
+
+    function gridColor() {
+        return document.documentElement.getAttribute('data-theme') === 'dark'
+            ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)';
+    }
+
+    async function loadRange(range) {
+        const res = await fetch(`{% url 'analytics_data' %}?range=${range}`);
+        const d = await res.json();
+
+        document.getElementById('rangeTotal').textContent = d.total.toLocaleString('en-IN');
+        document.getElementById('rangeLabel').textContent = labelFor[range];
+
+        // Line chart (daily spending)
+        if (lineChart) lineChart.destroy();
+        lineChart = new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: d.line.labels,
+                datasets: [{
+                    label: 'Spent (₹)', data: d.line.data,
+                    borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,.15)',
+                    fill: true, tension: .35, pointRadius: 2,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { color: gridColor() } }, y: { grid: { color: gridColor() }, beginAtZero: true } },
+            }
+        });
+
+        // Bar chart (by category)
+        if (barChart) barChart.destroy();
+        barChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: d.category.labels,
+                datasets: [{ label: 'Spent (₹)', data: d.category.data, backgroundColor: d.category.colors, borderRadius: 6 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { grid: { display: false } }, y: { grid: { color: gridColor() }, beginAtZero: true } },
+            }
+        });
+    }
+
+    // Button handling
+    document.querySelectorAll('#rangeButtons button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#rangeButtons button').forEach(b => {
+                b.classList.remove('btn-brand'); b.classList.add('btn-outline-primary');
+            });
+            btn.classList.add('btn-brand'); btn.classList.remove('btn-outline-primary');
+            loadRange(btn.dataset.range);
+        });
+    });
+
+    // Initial load (1 month)
+    loadRange(30);
+</script>
+{% endblock %}

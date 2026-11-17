@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="mb-0 fw-bold">Welcome back, {{ user.username }} 👋</h3>
+        <p class="text-muted mb-0">Here's your spending overview</p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if expenses %}
+        <a href="{% url 'download_pdf' %}" class="btn btn-outline-danger rounded-pill px-4">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+        </a>
+        {% endif %}
+        <a href="{% url 'add_expense' %}" class="btn btn-brand rounded-pill px-4">
+            <i class="bi bi-plus-lg me-1"></i>Add Expense
+        </a>
+    </div>
+</div>
+
+<!-- Budget over-limit alert (red popup) -->
+{% if over_budget %}
+<div class="alert alert-danger d-flex align-items-center rounded-3 shadow-sm" role="alert">
+    <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+    <div>
+        <strong>Budget exceeded!</strong>
+        You've spent <strong>₹{{ this_month_spent }}</strong> this month, which is over your
+        budget of <strong>₹{{ budget_amount }}</strong>. Time to slow down 🛑
+    </div>
+</div>
+{% endif %}
+
+<!-- Budget progress + last month summary -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0"><i class="bi bi-wallet2 me-2"></i>This Month's Budget</h6>
+                <a href="{% url 'budget' %}" class="btn btn-sm btn-outline-secondary rounded-pill">Set budget</a>
+            </div>
+            {% if budget_amount > 0 %}
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Spent ₹{{ this_month_spent }}</span>
+                    <span>Budget ₹{{ budget_amount }}</span>
+                </div>
+                <div class="progress" style="height:14px; border-radius:999px;">
+                    <div class="progress-bar {% if over_budget %}bg-danger{% else %}bg-success{% endif %}"
+                         role="progressbar" style="width: {{ used_pct }}%;">{{ used_pct }}%</div>
+                </div>
+                <div class="small mt-2 {% if over_budget %}text-danger{% else %}text-success{% endif %}">
+                    {% if over_budget %}Over by ₹{{ over_amount }}{% else %}₹{{ remaining }} left{% endif %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No budget set yet. Click <strong>Set budget</strong> to add one.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-calendar-check me-2"></i>Last Month ({{ last_month_name }})</h6>
+            <div class="d-flex justify-content-between small text-muted mb-1">
+                <span>Spent</span><span>₹{{ last_month_spent }}</span>
+            </div>
+            {% if last_month_diff is not None %}
+                {% if last_month_diff >= 0 %}
+                    <div class="h5 text-success mb-0"><i class="bi bi-piggy-bank me-1"></i>Saved ₹{{ last_month_diff }}</div>
+                    <div class="small text-muted">Great job staying under budget 🎉</div>
+                {% else %}
+                    <div class="h5 text-danger mb-0"><i class="bi bi-graph-up-arrow me-1"></i>Over budget</div>
+                    <div class="small text-muted">You spent more than your budget last month.</div>
+                {% endif %}
+            {% else %}
+                <div class="small text-muted">Set a budget to compare months.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);">
+                    <i class="bi bi-currency-rupee"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Spent</div>
+                    <div class="h4 fw-bold mb-0">₹{{ total }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#10b981,#059669);">
+                    <i class="bi bi-list-check"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Entries</div>
+                    <div class="h4 fw-bold mb-0">{{ count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon" style="background:linear-gradient(135deg,#f97316,#ea580c);">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Top Category</div>
+                    <div class="h4 fw-bold mb-0">{{ top_category }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Expense list -->
+    <div class="col-lg-8">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-receipt me-2"></i>Recent Expenses</h5>
+                <a href="{% url 'expenses_list' %}" class="small text-decoration-none">View all →</a>
+            </div>
+            {% if expenses %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="text-muted small text-uppercase">
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Date</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>
+                                    <span class="fw-semibold">{{ expense.title }}</span>
+                                    {% if expense.notes %}
+                                        <br><small class="text-muted">{{ expense.notes }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><span class="cat-badge" style="background:{{ expense.color }};">{{ expense.category }}</span></td>
+                                <td class="text-muted">{{ expense.date }}</td>
+                                <td class="text-end fw-bold">₹{{ expense.amount }}</td>
+                                <td class="text-center text-nowrap">
+                                    <a href="{% url 'edit_expense' expense.pk %}" class="btn btn-sm btn-outline-primary rounded-pill" title="Edit"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'delete_expense' expense.pk %}" class="btn btn-sm btn-outline-danger rounded-pill" title="Delete"><i class="bi bi-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted" style="font-size:3rem;"></i>
+                    <p class="text-muted mt-2 mb-3">No expenses yet.</p>
+                    <a href="{% url 'add_expense' %}" class="btn btn-brand rounded-pill px-4">Add your first expense</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Category breakdown + chart -->
+    <div class="col-lg-4">
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-pie-chart me-2"></i>Spending by Category</h5>
+            {% if by_category %}
+                <canvas id="categoryChart" height="220"></canvas>
+                <ul class="list-group list-group-flush mt-3">
+                    {% for row in by_category %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><span class="cat-badge me-2" style="background:{{ row.color }};">{{ row.category }}</span></span>
+                            <strong>₹{{ row.total }}</strong>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted text-center py-4">No data yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if by_category %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    const chartData = {{ chart_data|safe }};
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+        
+            labels: chartData.labels,
+            datasets: [{
+                data: chartData.data,
+                backgroundColor: chartData.colors,
+                borderWidth: 2,
+                borderColor: '#fff',
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            cutout: '62%',
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Expense Tracker{% endblock %}</title>
+
+    <!-- Bootstrap 5 + Bootstrap Icons + Google Font -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --brand: #6366f1;
+            --brand-dark: #4f46e5;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+        }
+        /* Dark theme overrides */
+        :root[data-theme="dark"] {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: #334155;
+        }
+        * { font-family: 'Poppins', sans-serif; }
+        body { background: var(--bg); color: var(--text); transition: background .3s, color .3s; }
+
+        .navbar {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            box-shadow: 0 2px 12px rgba(99,102,241,.25);
+        }
+        .navbar-brand { font-weight: 700; letter-spacing: .3px; }
+        .nav-link { font-weight: 500; color: rgba(255,255,255,.75) !important; }
+        .nav-link:hover, .nav-link.active { color: #fff !important; }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            background: var(--card-bg);
+            color: var(--text);
+            box-shadow: 0 4px 20px rgba(0,0,0,.06);
+            transition: transform .15s ease, box-shadow .15s ease, background .3s;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(0,0,0,.12); }
+        .text-muted { color: var(--muted) !important; }
+
+        .stat-icon {
+            width: 54px; height: 54px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; color: #fff;
+        }
+
+        .btn-brand { background: var(--brand); color: #fff; border: none; }
+        .btn-brand:hover { background: var(--brand-dark); color: #fff; }
+
+        .table { color: var(--text); }
+        .table > :not(caption) > * > * { padding: .9rem .75rem; background: transparent; color: var(--text); }
+        .cat-badge { padding: .35em .7em; border-radius: 999px; font-size: .78rem; font-weight: 600; color: #fff; }
+        .list-group-item { background: transparent; color: var(--text); border-color: var(--border); }
+
+        .auth-wrap { min-height: calc(100vh - 140px); display: flex; align-items: center; justify-content: center; }
+        .auth-card { width: 100%; max-width: 420px; }
+        .auth-logo {
+            width: 64px; height: 64px; border-radius: 18px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: #fff; margin: 0 auto 1rem;
+        }
+        .form-control, .form-select {
+            border-radius: 10px; padding: .6rem .8rem;
+            background: var(--card-bg); color: var(--text); border-color: var(--border);
+        }
+        .form-control:focus, .form-select:focus {
+            background: var(--card-bg); color: var(--text);
+            border-color: var(--brand); box-shadow: 0 0 0 .2rem rgba(99,102,241,.2);
+        }
+        .theme-toggle { background: rgba(255,255,255,.2); border: none; color: #fff; border-radius: 999px; width: 38px; height: 38px; }
+        .theme-toggle:hover { background: rgba(255,255,255,.35); }
+        footer { color: var(--muted); font-size: .85rem; }
+    </style>
+    <script>
+        // Apply saved theme before paint to avoid a flash.
+        try {
+            const t = localStorage.getItem('theme');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark py-3">
+        <div class="container">
+            <a class="navbar-brand" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}">
+                <i class="bi bi-wallet2 me-1"></i> Expense Tracker
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'expenses_list' %}">Expenses</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'analytics' %}">Analytics</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'budget' %}">Budget</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'import_expenses' %}">Import</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Profile</a></li>
+                        {% if user.is_staff %}
+                        <li class="nav-item"><a class="nav-link" href="/admin/" target="_blank">Admin</a></li>
+                        {% endif %}
+                        <li class="nav-item ms-lg-2">
+                            <button class="theme-toggle" id="themeToggle" title="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+                        </li>
+                        <li class="nav-item">
+                            <form action="{% url 'logout' %}" method="post" class="d-inline ms-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-light rounded-pill px-3">Logout</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a href="{% url 'login' %}" class="btn btn-sm btn-light rounded-pill px-3 me-2">Login</a></li>
+                        <li class="nav-item"><a href="{% url 'signup' %}" class="btn btn-sm btn-outline-light rounded-pill px-3">Sign Up</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="text-center py-4">
+        Expense Tracker &middot; Built with Django {% now "Y" %}
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dark mode toggle.
+        const toggle = document.getElementById('themeToggle');
+        if (toggle) {
+            const icon = toggle.querySelector('i');
+            const sync = () => {
+                const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                icon.className = dark ? 'bi bi-sun' : 'bi bi-moon-stars';
+            };
+            sync();
+            toggle.addEventListener('click', () => {
+                const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const next = dark ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', next);
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                sync();
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

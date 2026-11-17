@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card p-4 p-md-5 text-center mb-4">
+            <div class="auth-logo"><i class="bi bi-person"></i></div>
+            <h4 class="fw-bold mb-0">{{ user.username }}</h4>
+            <p class="text-muted">{{ user.email|default:"No email set" }}</p>
+            {% if user.is_staff %}<span class="badge bg-primary rounded-pill">Admin</span>{% endif %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card stat-card p-3 text-center">
+                    <div class="text-muted small">Total Spent</div>
+                    <div class="h4 fw-bold mb-0 text-primary">₹{{ total }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card p-3 text-center">
+                    <div class="text-muted small">Total Entries</div>
+                    <div class="h4 fw-bold mb-0">{{ count }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card p-3 text-center">
+                    <div class="text-muted small">Monthly Budget</div>
+                    <div class="h4 fw-bold mb-0">{% if budget %}₹{{ budget }}{% else %}—{% endif %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
