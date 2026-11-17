@@ -255,7 +255,7 @@ def analytics_data(request):
         days = int(request.GET.get('range', 30))
     except ValueError:
         days = 30
-    if days not in (7, 30, 90):
+    if days not in (7, 30, 90, 180, 365):
         days = 30
 
     end = timezone.localdate()

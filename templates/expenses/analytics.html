@@ -8,10 +8,12 @@
         <p class="text-muted mb-0">Your spending trends over time</p>
     </div>
     <!-- Time range buttons -->
-    <div class="btn-group" role="group" id="rangeButtons">
+    <div class="btn-group flex-wrap" role="group" id="rangeButtons">
         <button class="btn btn-outline-primary rounded-start-pill" data-range="7">Last 7 days</button>
         <button class="btn btn-brand" data-range="30">Last 1 month</button>
-        <button class="btn btn-outline-primary rounded-end-pill" data-range="90">Last 3 months</button>
+        <button class="btn btn-outline-primary" data-range="90">Last 3 months</button>
+        <button class="btn btn-outline-primary" data-range="180">Last 6 months</button>
+        <button class="btn btn-outline-primary rounded-end-pill" data-range="365">Last 1 year</button>
     </div>
 </div>
 
@@ -50,7 +52,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
     let lineChart, barChart;
-    const labelFor = { 7: 'last 7 days', 30: 'last 1 month', 90: 'last 3 months' };
+    const labelFor = {
+        7: 'last 7 days', 30: 'last 1 month', 90: 'last 3 months',
+        180: 'last 6 months', 365: 'last 1 year',
+    };
 
     function gridColor() {
         return document.documentElement.getAttribute('data-theme') === 'dark'
